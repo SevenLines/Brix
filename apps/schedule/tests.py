@@ -11,6 +11,7 @@ class TestBrixViewset(TestCaseBase):
         r = self.client.get("/api/brix/nagruzka/")
         pprint(r.json())
 
-    def test_set_nagruzka(self):
-        pass
+    def test_get_konts(self):
+        r = self.client.get("/api/brix/konts/")
+        pprint(r.json())
 

@@ -2,7 +2,7 @@ from django.db import models
 
 
 class Raspnagr(models.Model):
-    id = models.AutoField(primary_key=True, name="id_51")
+    id = models.AutoField(primary_key=True, db_column="id_51")
     hy1 = models.IntegerField()
     nt = models.IntegerField()
     sem = models.IntegerField()
@@ -34,7 +34,7 @@ class Raspnagr(models.Model):
 
 
 class Auditory(models.Model):
-    id = models.AutoField(primary_key=True, name="id_60")
+    id = models.AutoField(primary_key=True, db_column="id_60")
     obozn = models.TextField()
     korp = models.IntegerField()
     maxstud = models.IntegerField()
@@ -46,7 +46,7 @@ class Auditory(models.Model):
 
 
 class Teacher(models.Model):
-    id = models.AutoField(primary_key=True, name="id_61")
+    id = models.AutoField(primary_key=True, db_column="id_61")
     full_name = models.TextField(name="prep")
     short_name = models.TextField(name="preps")
 
@@ -56,18 +56,28 @@ class Teacher(models.Model):
 
 
 class Kontkurs(models.Model):
-    id = models.AutoField(primary_key=True, name="id_60")
+    id = models.AutoField(primary_key=True, db_column="id_7")
+    title = models.TextField(db_column="obozn")
+    kont = models.ForeignKey("Kontkurs", on_delete=models.SET_NULL, null=True)
     fac = models.IntegerField()
     aobozn = models.IntegerField()
     kurs = models.IntegerField()
     groups = models.IntegerField()
     stud = models.IntegerField()
-    title = models.TextField(name="obozn")
 
     class Meta:
         managed = False
-        db_table = 'kontkurs'
+        db_table = 'kontgrp'
 
+
+class Kontgrp(models.Model):
+    id = models.AutoField(primary_key=True, db_column="id_1")
+    fac = models.IntegerField()
+    aobozn = models.IntegerField()
+    kurs = models.IntegerField()
+    groups = models.IntegerField()
+    stud = models.IntegerField()
+    title = models.TextField(db_column="obozn")
 
 class RaspisZaoch(models.Model):
     raspnagr = models.ForeignKey("Raspnagr", on_delete=models.SET_NULL, null=True)
