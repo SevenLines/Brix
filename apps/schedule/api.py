@@ -8,6 +8,7 @@ from rest_framework.viewsets import ViewSet
 
 from apps.schedule.consts import BRIX_FACULTY_ID
 from apps.schedule.models import Raspnagr, RaspisZaoch, Kontkurs
+from apps.schedule.serializers import BrixSetNagruzkaSerializers
 from apps.schedule.utils import kont_obozn_process
 
 
@@ -95,13 +96,17 @@ ORDER BY rn.id_51, op, grp, pred
 
         nagr = {
             _id: process_nagr(list(items))
-            for _id, items in groupby(nagr, key=lambda x: x.id_51)
+            for _id, items in groupby(nagr, key=lambda x: x.id)
         }
 
         return Response(nagr)
 
-    @action(detail=False)
+    @action(detail=False, methods=["POST"])
     def set_nagruzka(self, request):
-        RaspisZaoch.objects.create(
+        serializer = BrixSetNagruzkaSerializers(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            rz = serializer.save()
 
-        )
+        return Response({
+            'raspis_id': rz.id
+        })

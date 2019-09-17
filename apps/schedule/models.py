@@ -79,12 +79,13 @@ class Kontgrp(models.Model):
     stud = models.IntegerField()
     title = models.TextField(db_column="obozn")
 
+
 class RaspisZaoch(models.Model):
-    raspnagr = models.ForeignKey("Raspnagr", on_delete=models.SET_NULL, null=True)
-    aud = models.ForeignKey("Auditory", on_delete=models.SET_NULL, null=True, related_name="+")
-    aud2 = models.ForeignKey("Auditory", on_delete=models.SET_NULL, null=True, related_name="+")
-    teacher = models.ForeignKey("Teacher", on_delete=models.SET_NULL, null=True)
-    kont = models.ForeignKey("Kontkurs", on_delete=models.SET_NULL, null=True)
+    raspnagr = models.ForeignKey("Raspnagr", db_column="raspnagr", on_delete=models.SET_NULL, null=True)
+    aud = models.ForeignKey("Auditory", db_column="aud", on_delete=models.SET_NULL, null=True, related_name="+")
+    aud2 = models.ForeignKey("Auditory", db_column="aud2", on_delete=models.SET_NULL, null=True, related_name="+")
+    teacher = models.ForeignKey("Teacher", db_column="teacher", on_delete=models.SET_NULL, null=True)
+    kont = models.ForeignKey("Kontkurs", db_column="kont", on_delete=models.SET_NULL, null=True)
     kontgrp = models.IntegerField(null=True)
     type = models.IntegerField()
     op = models.IntegerField()
