@@ -17,7 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         with connection.cursor() as cursor:
             query = cursor.execute("""
-SELECT DISTINCT rtrim(coalesce(pl.konts, kg.obozn, kk.obozn)) as grp, vp.pred,
+SELECT DISTINCT rtrim(coalesce(pl.konts + ' ' + cast(ceiling(1.0 * semestr / 2) as varchar) + 'курс', kg.obozn, kk.obozn)) as grp, vp.pred,
 	r1.everyweek as everyweek1,
 	r1.day as day1,
 	r1.para as para1,
@@ -39,7 +39,7 @@ FROM raspis r1
 	LEFT JOIN SPR_POLITEX_CURRENT_SCHEDULE.dbo.raspnagr rn2 ON rn2.id_51 = r2.raspnagr
 	--and (r1.num_zant - (SELECT min(num_zant) FROM raspis WHERE raspnagr = r1.raspnagr) = r2.num_zant - (SELECT min(num_zant) FROM SPR_POLITEX_CURRENT_SCHEDULE.dbo.raspis WHERE raspnagr = r1.raspnagr))
 	LEFT JOIN SPR_POLITEX_CURRENT_SCHEDULE.dbo.audlist al2 ON al2.auds = r2.aud
-WHERE (r2.everyweek is NULL or (r1.everyweek != r2.everyweek and r1.day != r2.day or r1.para != r2.para or r1.aud != r2.aud)) 
+WHERE (r2.everyweek is NULL or (r1.everyweek != r2.everyweek or r1.day != r2.day or r1.para != r2.para or r1.aud != r2.aud)) 
 	and rn1.sem = 1
 ORDER BY 1
             """)
@@ -79,7 +79,6 @@ ORDER BY 1
                         item['reasons'].append("Смена преподавателя")
                     else:
                         item['reasons'].append("Изменения в расписании")
-                    # print(key, groups[key])
 
             groups_changed = set(group['group'] for group in groups.values())
             for group in sorted(groups_changed):
