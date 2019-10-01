@@ -1,3 +1,5 @@
 django==2.2.5
 djangorestframework
 django-pyodbc-azure
+python-docx
+model_mommy

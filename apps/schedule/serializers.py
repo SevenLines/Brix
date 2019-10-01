@@ -27,3 +27,14 @@ class BrixSetNagruzkaSerializers(serializers.Serializer):
 
         return rz
 
+
+class BrixGetRaspisSerializer(serializers.Serializer):
+    kontid = serializers.IntegerField()
+
+
+class BrixModuleSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False)
+    kont_id = serializers.IntegerField()
+    title = serializers.CharField()
+    date_start = serializers.DateField()
+    date_end = serializers.DateField()

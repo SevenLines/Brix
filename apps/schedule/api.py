@@ -7,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from apps.schedule.consts import BRIX_FACULTY_ID
-from apps.schedule.models import Raspnagr, RaspisZaoch, Kontkurs
-from apps.schedule.serializers import BrixSetNagruzkaSerializers
+from apps.schedule.models import Raspnagr, RaspisZaoch, Kontkurs, Kontgrp, BrixModule, BrixRaspnagrToModules
+from apps.schedule.serializers import BrixSetNagruzkaSerializers, BrixModuleSerializer
 from apps.schedule.utils import kont_obozn_process
 
 
@@ -20,7 +20,7 @@ class BrixViewSet(ViewSet):
         return 16
 
     @action(detail=False)
-    def konts(self, request):
+    def konts(self, request, *args, **kwargs):
         query = Kontkurs.objects.filter(id__in=RawSQL("""
         SELECT kk.id_1
         FROM raspnagr rn
@@ -33,16 +33,32 @@ class BrixViewSet(ViewSet):
             "sem": self.get_semester(),
         }, []))
 
+        query = list(query)
+
+        grps = Kontgrp.objects.filter(kont__in=query).select_related('kont').order_by("kont")
+        grps = {
+            id_: list(items)
+            for id_, items in groupby(grps, lambda x: x.kont.id)
+        }
+
         result = {
             i.id: {
-                'title': kont_obozn_process(i.title)
+                'title': kont_obozn_process(i.title),
+                'groups': {
+                    i.id: {
+                        "id": i.id,
+                        "kont": i.kont.id,
+                        "title": kont_obozn_process(i.title),
+                        "depth": i.depth,
+                    }
+                    for i in grps.get(i.id, [])}
             } for i in query
         }
 
         return Response(result)
 
     @action(detail=False)
-    def nagruzka(self, request):
+    def nagruzka(self, request, *args, **kwargs):
         query = """
 SELECT rn.id_51 as id_51, 
     rtrim(coalesce(pl.konts, kg.obozn, kk.obozn)) as grp, 
@@ -102,7 +118,7 @@ ORDER BY rn.id_51, op, grp, pred
         return Response(nagr)
 
     @action(detail=False, methods=["POST"])
-    def set_nagruzka(self, request):
+    def set_nagruzka(self, request, *args, **kwargs):
         serializer = BrixSetNagruzkaSerializers(data=request.data)
         if serializer.is_valid(raise_exception=True):
             rz = serializer.save()
@@ -110,3 +126,66 @@ ORDER BY rn.id_51, op, grp, pred
         return Response({
             'raspis_id': rz.id
         })
+
+    @action(detail=False, methods=["GET"])
+    def raspis(self, *args, **kwargs):
+
+
+        return Response({})
+
+
+class BrixModulesViewSet(ViewSet):
+    @action(detail=False, methods=["GET"], url_path="get-for-kont")
+    def get_for_kont(self, request, *args, **kwargs):
+        kont_id = request.query_params['kont_id']
+        modules = BrixModule.objects.filter(kont_id=kont_id)
+
+        result = {}
+        for m in modules:
+            result[m.id] = {
+                'date_start': m.date_start,
+                'date_end': m.date_end,
+                'title': m.title,
+                'kont_id': m.kont_id,
+            }
+
+        return Response(result)
+
+    @action(detail=False, methods=["GET"], url_path="get-hours-for-kont")
+    def get_hours_by_raspnagr(self, request, *args, **kwargs):
+        kont_id = request.query_params['kont_id']
+        modules = BrixModule.objects.filter(kont_id=kont_id)
+        items = BrixRaspnagrToModules.objects.filter(module__in=modules)
+
+        result = {}
+        for i in items:
+            raspnagr_item = result.setdefault(i.raspnagr_id, {})
+            module_item = raspnagr_item.setdefault(i.module_id, {})
+            module_item['hours'] = i.hours
+
+        return Response(result)
+
+    @action(detail=False, methods=['POST'], url_path="update-or-create")
+    def update_or_create_kont(self, request, *args, **kwargs):
+        serializer = BrixModuleSerializer(data=request.data)
+        serializer.is_valid(True)
+
+        data = {}
+        if serializer.validated_data.get('id'):
+            data['id'] = serializer.validated_data.get('id')
+
+        module, _ = BrixModule.objects.update_or_create(**data, defaults={
+            "kont_id": serializer.validated_data.get('kont_id'),
+            "date_start": serializer.validated_data.get('date_start'),
+            "date_end": serializer.validated_data.get('date_end'),
+            "title": serializer.validated_data.get('title'),
+        })
+
+        return Response(BrixModuleSerializer(module).data)
+
+    @action(detail=False, methods=["DELETE"], url_path="remove")
+    def remove_module(self, request, *args, **kwargs):
+        BrixModule.objects.filter(id=request.data.get('id')).delete()
+
+        return Response({})
+

@@ -6,6 +6,8 @@ class Raspnagr(models.Model):
     hy1 = models.IntegerField()
     nt = models.IntegerField()
     sem = models.IntegerField()
+    kontid = models.ForeignKey("Kontgrp", db_column="kontid", on_delete=models.SET_NULL, null=True)
+    prep = models.ForeignKey("Teacher", db_column="prep", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         managed = False
@@ -33,6 +35,26 @@ class Raspnagr(models.Model):
     # syear = db.Column(db.Integer)
 
 
+class AudSps(models.Model):
+    id = models.AutoField(primary_key=True, db_column="id_53")
+    obozn = models.TextField(db_column="auds")
+    stud = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'audsps'
+
+
+class AudList(models.Model):
+    auds = models.IntegerField()
+    aud = models.ForeignKey("Auditory", db_column="aud", null=True, on_delete=models.SET_NULL)
+    num = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'audlist'
+
+
 class Auditory(models.Model):
     id = models.AutoField(primary_key=True, db_column="id_60")
     obozn = models.TextField()
@@ -47,37 +69,40 @@ class Auditory(models.Model):
 
 class Teacher(models.Model):
     id = models.AutoField(primary_key=True, db_column="id_61")
-    full_name = models.TextField(name="prep")
-    short_name = models.TextField(name="preps")
+    full_name = models.TextField(db_column="prep")
+    short_name = models.TextField(db_column="preps")
 
     class Meta:
         managed = False
         db_table = 'prepods'
 
 
-class Kontkurs(models.Model):
+class Kontgrp(models.Model):
     id = models.AutoField(primary_key=True, db_column="id_7")
     title = models.TextField(db_column="obozn")
-    kont = models.ForeignKey("Kontkurs", on_delete=models.SET_NULL, null=True)
-    fac = models.IntegerField()
-    aobozn = models.IntegerField()
-    kurs = models.IntegerField()
-    groups = models.IntegerField()
-    stud = models.IntegerField()
+    kont = models.ForeignKey("Kontkurs", db_column="kont", on_delete=models.SET_NULL, null=True)
+    students = models.IntegerField()
+    parent = models.IntegerField()
+    depth = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'kontgrp'
 
 
-class Kontgrp(models.Model):
+class Kontkurs(models.Model):
     id = models.AutoField(primary_key=True, db_column="id_1")
     fac = models.IntegerField()
     aobozn = models.IntegerField()
     kurs = models.IntegerField()
     groups = models.IntegerField()
+    pgroups = models.IntegerField()
     stud = models.IntegerField()
-    title = models.TextField(db_column="obozn")
+    title = models.TextField(db_column="obozn", max_length=20)
+
+    class Meta:
+        managed = False
+        db_table = 'kontkurs'
 
 
 class RaspisZaoch(models.Model):
@@ -97,3 +122,52 @@ class RaspisZaoch(models.Model):
     class Meta:
         managed = False
         db_table = 'raspis_zaoch'
+
+
+class Raspis(models.Model):
+    id = models.AutoField(primary_key=True, db_column="id_55")
+    raspnagr = models.ForeignKey("Raspnagr", db_column="raspnagr", on_delete=models.SET_NULL, null=True)
+    everyweek = models.IntegerField()
+    day = models.IntegerField()
+    para = models.IntegerField()
+    kol_par = models.IntegerField()
+    # aud = models.ForeignKey("Auditory", db_column="aud", on_delete=models.SET_NULL, null=True)
+    aud = models.IntegerField(db_column="aud", null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'raspis'
+
+
+class Ownres(models.Model):
+    id = models.AutoField(primary_key=True, db_column="id_71")
+    ownerid = models.IntegerField()
+    obj = models.IntegerField()
+    objid = models.ForeignKey("Kontkurs", db_column="objid", on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'ownres'
+
+
+class BrixModule(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.TextField()
+    date_start = models.DateField()
+    date_end = models.DateField()
+    kont = models.ForeignKey("Kontkurs", null=True, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'brix_modules'
+
+
+class BrixRaspnagrToModules(models.Model):
+    id = models.AutoField(primary_key=True)
+    raspnagr = models.ForeignKey("Raspnagr", null=True, on_delete=models.DO_NOTHING)
+    module = models.ForeignKey("BrixModule", null=True, on_delete=models.DO_NOTHING)
+    hours = models.IntegerField(default=0)
+
+    class Meta:
+        managed = False
+        db_table = 'brix_raspnagr_to_modules'
