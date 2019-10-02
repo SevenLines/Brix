@@ -7,9 +7,25 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from apps.schedule.consts import BRIX_FACULTY_ID
-from apps.schedule.models import Raspnagr, RaspisZaoch, Kontkurs, Kontgrp, BrixModule, BrixRaspnagrToModules
+from apps.schedule.models import Raspnagr, RaspisZaoch, Kontkurs, Kontgrp, BrixModule, BrixRaspnagrToModules, Teacher
 from apps.schedule.serializers import BrixSetNagruzkaSerializers, BrixModuleSerializer
 from apps.schedule.utils import kont_obozn_process
+
+
+class CommonViewSet(ViewSet):
+    @action(detail=False)
+    def teachers(self, request, *args, **kwargs):
+        teachers = Teacher.objects.order_by("full_name")
+
+        result = {
+            i.id: {
+                "id": i.id,
+                "full_name": i.full_name.strip(),
+                "short_name": i.short_name.strip(),
+            } for i in teachers
+        }
+
+        return Response(result)
 
 
 class BrixViewSet(ViewSet):
@@ -43,6 +59,7 @@ class BrixViewSet(ViewSet):
 
         result = {
             i.id: {
+                'id': i.id,
                 'title': kont_obozn_process(i.title),
                 'groups': {
                     i.id: {
@@ -57,8 +74,14 @@ class BrixViewSet(ViewSet):
 
         return Response(result)
 
-    @action(detail=False)
+    @action(detail=False, url_path="nagruzka")
     def nagruzka(self, request, *args, **kwargs):
+        kont_id = request.query_params['kont_id']
+
+        kont_condition = "TRUE"
+        if kont_id:
+            kont_condition = "coalesce(kl.kont, kg.kont, kk.id_1) = {}".format(kont_id)
+
         query = """
 SELECT rn.id_51 as id_51, 
     rtrim(coalesce(pl.konts, kg.obozn, kk.obozn)) as grp, 
@@ -69,7 +92,7 @@ SELECT rn.id_51 as id_51,
     kk.kurs,
     rn.op as op,
     rn.nt as nt,
-    rn.prep as prep,
+    rn.prep as prep_id,
     rtrim(vp.pred) as pred,
     hy1 * %(weeks_count)s as hours
 FROM raspnagr rn
@@ -78,13 +101,14 @@ FROM raspnagr rn
  LEFT JOIN kontlist kl ON kl.op = rn.op
  LEFT JOIN kontkurs kk ON kk.id_1 = isnull(kl.kont, rn.kont)
  LEFT JOIN potoklist pl ON pl.op = rn.op
-WHERE kk.fac = %(fac)s and rn.sem = %(sem)s
+WHERE kk.fac = %(fac)s and rn.sem = %(sem)s AND %(kont_condition)s
 ORDER BY rn.id_51, op, grp, pred
         """
 
         nagr = Raspnagr.objects.raw(query % {
             "fac": BRIX_FACULTY_ID,
             "sem": self.get_semester(),
+            "kont_condition": kont_condition,
             "weeks_count": self.get_weeks_count(),
         })
 
@@ -94,7 +118,7 @@ ORDER BY rn.id_51, op, grp, pred
             return {
                 "op": first_item.op,
                 "discipline": first_item.pred,
-                "teacher": first_item.prep,
+                "teacher": first_item.prep_id,
                 "hours": first_item.hours,
                 "nt": first_item.nt,
                 "groups_title": kont_obozn_process(first_item.grp),
@@ -129,8 +153,6 @@ ORDER BY rn.id_51, op, grp, pred
 
     @action(detail=False, methods=["GET"])
     def raspis(self, *args, **kwargs):
-
-
         return Response({})
 
 
@@ -188,4 +210,3 @@ class BrixModulesViewSet(ViewSet):
         BrixModule.objects.filter(id=request.data.get('id')).delete()
 
         return Response({})
-

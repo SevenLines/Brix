@@ -18,7 +18,10 @@ export interface BrixRaspnagrToModule {
 export interface Raspnagr {
     id: number
     discipline: string
-    teacher: Teacher
+    teacher: number
+    groups_title: string,
+    hours: number,
+    nt: number,
 }
 
 export interface Teacher {
@@ -30,9 +33,16 @@ export interface Teacher {
 export interface Kontkurs {
     id: number
     title: string
+    depth?: number
+    kont?: number,
+    groups?: Dictionary<Kontkurs>
 }
 
 export interface RootState {
+
+}
+
+export interface BrixModuleState {
     konts: Dictionary<Kontkurs>,
     teachers: Dictionary<Teacher>
 }
