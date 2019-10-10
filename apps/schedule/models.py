@@ -155,11 +155,21 @@ class BrixModule(models.Model):
     title = models.TextField()
     date_start = models.DateField()
     date_end = models.DateField()
-    kont = models.ForeignKey("Kontkurs", null=True, on_delete=models.DO_NOTHING)
+    konts = models.ManyToManyField("Kontkurs", through="BrixModuleToKont")
 
     class Meta:
         managed = False
         db_table = 'brix_modules'
+
+
+class BrixModuleToKont(models.Model):
+    id = models.AutoField(primary_key=True)
+    module = models.ForeignKey("BrixModule", null=True, on_delete=models.DO_NOTHING)
+    kont = models.ForeignKey("Kontkurs", null=True, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'brix_module_to_kont'
 
 
 class BrixRaspnagrToModules(models.Model):

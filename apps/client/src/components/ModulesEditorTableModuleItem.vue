@@ -1,7 +1,7 @@
 <template>
     <div class="module-item">
-        <div class="item-button">
-            <i class="fa fa-plus" v-if="!hours"></i>
+        <div class="item-button" @click="moduleItemClicked">
+            <input type="text" v-model="innerHours" style="width: 100%">
         </div>
     </div>
 </template>
@@ -19,6 +19,21 @@
     export default class ModulesEditorTableModuleItem extends Vue {
         @Prop() private hours!: number;
 
+        private innerHours: number = 0;
+
+        @Watch("hours")
+        onHoursChanged() {
+            this.innerHours = this.hours;
+        }
+
+        @Watch("innerHours")
+        onInnerHoursChanged() {
+            this.$emit("hours-changed", this.innerHours)
+        }
+
+        moduleItemClicked(e: any) {
+            this.$emit("clicked", e)
+        }
     }
 </script>
 
@@ -38,7 +53,7 @@
             transition: all 0.3s;
 
             &:hover {
-                background-color: silver;
+                /*background-color: silver;*/
                 color: black;
             }
         }

@@ -131,7 +131,8 @@ ORDER BY rn.id_51, op, grp, pred
                         "kont_group_id": i.kont_group_id,
                     } for i in items
                 ],
-                'groups_ids': [i.kont_id for i in items]
+                'groups_ids': [i.kont_id for i in items],
+                'raspnagr_ids': [i.id for i in items]
             }
 
         nagr = {
@@ -160,7 +161,7 @@ class BrixModulesViewSet(ViewSet):
     @action(detail=False, methods=["GET"], url_path="get-for-kont")
     def get_for_kont(self, request, *args, **kwargs):
         kont_id = request.query_params['kont_id']
-        modules = BrixModule.objects.filter(kont_id=kont_id)
+        modules = BrixModule.objects.filter(konts__in=[kont_id])
 
         result = {}
         for m in modules:
@@ -168,7 +169,7 @@ class BrixModulesViewSet(ViewSet):
                 'date_start': m.date_start,
                 'date_end': m.date_end,
                 'title': m.title,
-                'kont_id': m.kont_id,
+                'id': m.id,
             }
 
         return Response(result)
@@ -176,7 +177,7 @@ class BrixModulesViewSet(ViewSet):
     @action(detail=False, methods=["GET"], url_path="get-hours-for-kont")
     def get_hours_by_raspnagr(self, request, *args, **kwargs):
         kont_id = request.query_params['kont_id']
-        modules = BrixModule.objects.filter(kont_id=kont_id)
+        modules = BrixModule.objects.filter(konts__in=[kont_id])
         items = BrixRaspnagrToModules.objects.filter(module__in=modules)
 
         result = {}

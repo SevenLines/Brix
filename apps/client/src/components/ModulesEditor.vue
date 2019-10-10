@@ -12,11 +12,11 @@
                 </b-nav>
             </div>
 
-            <div class="float-right" v-if="activeKont">
-                <b-btn variant="info" v-b-modal.modal-modules>
-                    <i class="fa fa-edit"></i> Настроить модули
-                </b-btn>
-            </div>
+<!--            <div class="float-right" v-if="activeKont">-->
+<!--                <b-btn variant="info" v-b-modal.modal-modules>-->
+<!--                    <i class="fa fa-edit"></i> Настроить модули-->
+<!--                </b-btn>-->
+<!--            </div>-->
         </div>
         <div class="clearfix"></div>
 

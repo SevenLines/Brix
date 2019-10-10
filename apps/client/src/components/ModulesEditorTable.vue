@@ -17,17 +17,13 @@
                 <small> {{data.value}}</small>
             </template>
 
-            <template v-slot:cell(module_1)="data">
-                <modules-editor-table-module-item data="data" @click="moduleItemClicked"/>
-            </template>
-            <template v-slot:cell(module_2)="data">
-                <modules-editor-table-module-item data="data" @click="moduleItemClicked"/>
-            </template>
-            <template v-slot:cell(module_3)="data">
-                <modules-editor-table-module-item data="data" @click="moduleItemClicked"/>
-            </template>
-            <template v-slot:cell(module_4)="data">
-                <modules-editor-table-module-item data="data" @click="moduleItemClicked"/>
+
+            <template v-for="(m, module_id) in modules" v-slot:[`cell(module_${module_id})`]="data">
+                <modules-editor-table-module-item
+                        data="data"
+                        @clicked="moduleItemClicked"
+                        @hours-changed="onHoursChanged(module_id, data)"
+                />
             </template>
 
             <template v-slot:cell(teachers)="data">
@@ -53,7 +49,7 @@
     import {State, Action, Getter} from 'vuex-class'
     import {Component, Prop, Vue, Watch} from 'vue-property-decorator'
     import {Dictionary} from 'vuex'
-    import {Kontkurs, Raspnagr, Teacher} from '@/types'
+    import {Kontkurs, Module, Raspnagr, Teacher} from '@/types'
     import axios from 'axios';
     import _ from 'lodash';
     import ModulesEditorTableModuleItem from "@/components/ModulesEditorTableModuleItem.vue";
@@ -74,10 +70,12 @@
         }
 
         private nagruzka: Array<Raspnagr> = [];
+        private modules: Dictionary<Module> = {};
+        private modulesToRaspnagr: Dictionary<any> = {};
         private isLoading = false;
 
         get tableData(): any {
-            return {
+            let result: any = {
                 fields: [
                     {
                         key: 'discipline',
@@ -104,30 +102,12 @@
                         key: 'hours',
                         label: 'Часы',
                     },
-                    {
-                        key: 'module_1',
-                        label: '1',
-                        thStyle: "text-align: center",
-                    },
-                    {
-                        key: 'module_2',
-                        label: '2',
-                        thStyle: "text-align: center",
-                    },
-                    {
-                        key: 'module_3',
-                        label: '3',
-                        thStyle: "text-align: center",
-                    },
-                    {
-                        key: 'module_4',
-                        label: '4',
-                        thStyle: "text-align: center",
-                    },
                 ],
                 items: _(this.nagruzka).groupBy(i => `${i.discipline}_${i.nt}`).map((items, key) => {
                         let discipline = items[0].discipline;
                         let nt = items[0].nt;
+                        let raspnagr_id = items[0].raspnagr_ids[0];
+
                         let teachers = items.map(i => {
                             let teacher = this.teachers ? this.teachers[i.teacher] || {} : {};
                             return {
@@ -137,34 +117,92 @@
                         });
 
                         let hours: any = _(items).map("hours").max();
-                        return {
+
+                        let out: any = {
                             discipline,
                             teachers,
                             hours,
+                            raspnagr_ids: _(items).map(i => i.raspnagr_ids).flat().values(),
                             nt_title: this.NORMTYPES[nt].title,
                             nt_class: this.NORMTYPES[nt].klass,
-                        }
+                        };
+
+                        _(this.modules).map(i => i).forEach((m: Module) => {
+                            out[`module_${m.id}`] = _.get(
+                                this.modulesToRaspnagr,
+                                `${raspnagr_id}.${m.id}`,
+                                {
+                                    'hours': 0,
+                                },
+                            );
+                        });
+
+                        return out
                     }
                 ).value()
-            }
+            };
+
+            // bind modules
+            _(this.modules).map(i => i).orderBy("title").forEach((m: Module) => {
+                result.fields.push({
+                    key: `module_${m.id}`,
+                    label: m.title,
+                },)
+            });
+
+            return result;
+        }
+
+        async loadModules() {
+            let r = await axios.get("/api/brix-modules/get-for-kont", {
+                params: {
+                    kont_id: this.kont.id
+                }
+            });
+
+            this.modules = r.data;
+        }
+
+        async loadModulesForRaspnagr() {
+            let r = await axios.get("/api/brix-modules/get-hours-for-kont", {
+                params: {
+                    kont_id: this.kont.id
+                }
+            });
+
+            this.modulesToRaspnagr = r.data;
+        }
+
+        async loadNagruzka() {
+            let r = await axios.get("/api/brix/nagruzka", {
+                params: {
+                    kont_id: this.kont.id
+                }
+            });
+
+            this.nagruzka = r.data;
         }
 
         @Watch("kont", {immediate: true})
         async onKontChange() {
             if (this.kont) {
                 this.isLoading = true;
-                let r = await axios.get("/api/brix/nagruzka", {
-                    params: {
-                        kont_id: this.kont.id
-                    }
-                });
+
+                await Promise.all([
+                    this.loadNagruzka(),
+                    this.loadModules(),
+                    this.loadModulesForRaspnagr(),
+                ]);
+
                 this.isLoading = false;
-                this.nagruzka = r.data;
             }
         }
 
         moduleItemClicked(e: any) {
-            console.log(e);
+        }
+
+        onHoursChanged(module_id: number, data: any) {
+            console.log(data)
         }
 
     }

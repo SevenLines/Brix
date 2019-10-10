@@ -22,7 +22,22 @@ export interface Raspnagr {
     groups_title: string,
     hours: number,
     nt: number,
+    raspnagr_ids: Array<number>
 }
+
+export interface Module {
+    id: number,
+    title: string,
+    date_start: Date,
+    date_end: Date
+}
+
+// export interface ModuleToRaspnagr {
+//     id: number,
+//     title: string,
+//     date_start: Date,
+//     date_end: Date
+// }
 
 export interface Teacher {
     id: number,
